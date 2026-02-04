@@ -1,0 +1,90 @@
+/*
+ * sbtixhat-i2c.dts
+ *
+ * Overlay for sBitx HAT I2C Configuration:
+ * 1. Configures Software I2C on GPIOs 13 (SDA) and 6 (SCL).
+ * 2. Adds 25MHz reference clock for Si5351.
+ * 3. Defines Si5351 Clock Generator at 0x60.
+ *    Ref: https://www.kernel.org/doc/Documentation/devicetree/bindings/clock/silabs%2Csi5351.txt
+ */
+
+/dts-v1/;
+/plugin/;
+
+/* 25MHz reference crystal */
+/ {
+    fragment@3 {
+        target-path = "/";
+        __overlay__ {
+            ref25: ref25M {
+                compatible = "fixed-clock";
+                #clock-cells = <0>;
+                clock-frequency = <25000000>;
+            };
+        };
+    };
+};
+
+/ {
+    compatible = "brcm,bcm2835";
+
+
+
+    /* Fragment 2: Software I2C */
+    fragment@2 {
+        target-path = "/";
+        __overlay__ {
+            i2c_gpio: i2c@0 {
+                compatible = "i2c-gpio";
+                gpios = <&gpio 13 0 /* SDA */
+                         &gpio 6 0 /* SCL */
+                        >;
+                i2c-gpio,delay-us = <2>; /* ~100 kHz */
+                #address-cells = <1>;
+                #size-cells = <0>;
+                status = "okay";
+
+                si5351a: clock-generator@60 {
+                    compatible = "silabs,si5351a-msop";
+                    reg = <0x60>;
+                    #address-cells = <1>;
+                    #size-cells = <0>;
+                    #clock-cells = <1>;
+
+                    /* connect xtal input to 25MHz reference */
+                    clocks = <&ref25>;
+                    clock-names = "xtal";
+
+                    /* connect xtal input as source of pll0 and pll1 */
+                    silabs,pll-source = <0 0>, <1 0>;
+
+                    /* CLK0 configuration */
+                    clkout0 {
+                        reg = <0>;
+                        silabs,drive-strength = <8>;
+                        silabs,multisynth-source = <0>;
+                        silabs,clock-source = <0>;
+                        silabs,pll-master;
+                    };
+
+                    /* CLK1 configuration */
+                    clkout1 {
+                        reg = <1>;
+                        silabs,drive-strength = <8>;
+                        silabs,multisynth-source = <1>;
+                        silabs,clock-source = <0>;
+                        silabs,pll-master;
+                    };
+
+                    /* CLK2 configuration */
+                    clkout2 {
+                        reg = <2>;
+                        silabs,drive-strength = <8>;
+                        silabs,multisynth-source = <1>;
+                        silabs,clock-source = <0>;
+                    };
+                };
+            };
+        };
+    };
+};
