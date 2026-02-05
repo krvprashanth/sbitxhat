@@ -16,6 +16,7 @@
     fragment@3 {
         target-path = "/";
         __overlay__ {
+            i2c3 = &i2c_gpio;
             ref25: ref25M {
                 compatible = "fixed-clock";
                 #clock-cells = <0>;
